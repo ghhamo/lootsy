@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16
+    container_name: lootsy-db
+    environment:
+      POSTGRES_DB: lootsy
+      POSTGRES_USER: lootsy
+      POSTGRES_PASSWORD: 12131
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lootsy -d lootsy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lootsy-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lootsy
+      SPRING_DATASOURCE_USERNAME: lootsy
+      SPRING_DATASOURCE_PASSWORD: 12131
+      IMAGE_FOLDER: /app/storage
+    ports:
+      - "8080:8080"
+    volumes:
+      - pictures:/app/storage
+
+volumes:
+  db-data:
+  pictures:

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shipping Information</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/variables.css}">
+    <link rel="stylesheet" th:href="@{/css/components.css}">
+    <link rel="stylesheet" th:href="@{/css/shipping.css}">
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <script th:src="@{/js/shared-utils.js}"></script>
+    
+    <style>
+        .products-scroll-container {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f7fafc;
+        }
+        
+        .products-scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .products-scroll-container::-webkit-scrollbar-track {
+            background: #f7fafc;
+            border-radius: 3px;
+        }
+        
+        .products-scroll-container::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+        
+        .products-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+        
+        .products-scroll-container {
+            position: relative;
+        }
+        
+        .products-scroll-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.05));
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .products-scroll-container:hover::after {
+            opacity: 1;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            max-width: 600px;
+        }
+        
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .field.full {
+            grid-column: 1 / -1;
+        }
+        
+        .field label {
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        .req {
+            color: #ef4444;
+        }
+        
+        .input {
+            padding: 12px 16px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+        
+        .input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .input::placeholder {
+            color: #9ca3af;
+        }
+        
+        .select-wrap {
+            position: relative;
+        }
+        
+        .select {
+            padding: 12px 40px 12px 16px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #ffffff;
+            appearance: none;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+        
+        .select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .chev {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        
+        .phone-row {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .phone-row .select-wrap {
+            flex: 0 0 120px;
+        }
+        
+        .phone-row .input {
+            flex: 1;
+        }
+        
+        .select.code {
+            padding: 12px 30px 12px 12px;
+            font-size: 13px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .field.full {
+                grid-column: 1;
+            }
+        }
+    </style>
+    <script>
+        authGuard();
+        registerAlpineComponents();
+    </script>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container">
+    <h1 class="page-title">Shipping Information</h1>
+
+    <section class="checkout">
+        <form class="ship-form" action="#" x-data="shippingForm" @submit.prevent="handleSubmit">
+            <div class="form-grid">
+                <div class="field">
+                    <label for="first">First Name <span class="req">*</span></label>
+                    <input id="first" type="text" class="input" placeholder="Enter Name" required>
+                </div>
+
+                <div class="field">
+                    <label for="last">Last Name <span class="req">*</span></label>
+                    <input id="last" type="text" class="input" placeholder="Enter Last Name" required>
+                </div>
+
+                <div class="field">
+                    <label for="country">Country <span class="req">*</span></label>
+                    <div class="select-wrap">
+                        <select id="country" class="select" required>
+                            <option value="">Enter Name</option>
+                            <option>Armenia</option>
+                            <option>United States</option>
+                            <option>Canada</option>
+                            <option>United Kingdom</option>
+                            <option>Germany</option>
+                            <option>France</option>
+                        </select>
+                        <span class="chev">▾</span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="city">City <span class="req">*</span></label>
+                    <input id="city" type="text" class="input" placeholder="Enter City" required>
+                </div>
+
+                <div class="field">
+                    <label for="street">Address <span class="req">*</span></label>
+                    <input id="street" type="text" class="input" placeholder="Enter your address" required>
+                </div>
+
+                <div class="field">
+                    <label for="phone">Phone Number <span class="req">*</span></label>
+                    <div class="phone-row">
+                        <div class="select-wrap">
+                            <label>
+                                <select class="select code">
+                                    <option>ARM +374</option>
+                                    <option>US +1</option>
+                                    <option>CA +1</option>
+                                    <option>UK +44</option>
+                                    <option>DE +49</option>
+                                    <option>FR +33</option>
+                                </select>
+                            </label>
+                            <span class="chev">▾</span>
+                        </div>
+                        <input id="phone" type="tel" class="input" placeholder="XX-XXX-XXX" required>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <aside class="summary" x-data="shippingPage" x-init="init">
+            <div x-show="validationError" class="sum-card" style="background: #fee; border: 1px solid #fcc; color: #c33;">
+                <span x-text="validationError"></span>
+            </div>
+            
+            <template x-if="loading">
+                <div class="sum-card">
+                    <p>Loading cart...</p>
+                </div>
+            </template>
+
+            <template x-if="error">
+                <div class="sum-card">
+                    <p style="color: #ef4444;" x-text="error"></p>
+                </div>
+            </template>
+
+            <template x-if="!loading && !error && items.length === 0">
+                <div class="sum-card">
+                    <p>Your cart is empty.</p>
+                    <a th:href="@{/home}" class="btn" style="margin-top: 12px;">Continue Shopping</a>
+                </div>
+            </template>
+
+            <template x-if="!loading && !error && items.length > 0">
+                <div>
+                    <div class="products-scroll-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 16px; padding-right: 4px; scroll-behavior: smooth;">
+                        <template x-for="item in items" :key="item.id">
+                            <div class="sum-card product">
+                                <div class="prod">
+                                    <div class="thumb">
+                                        <img :src="item.image || 'https://via.placeholder.com/64x64.png'" :alt="item.name" 
+                                             onerror="this.src='https://via.placeholder.com/64x64.png'">
+                                    </div>
+                                <div class="details">
+                                    <div class="top"><strong class="name" x-text="item.name"></strong></div>
+                                    <div class="price" x-text="format(item.price)"></div>
+                                </div>
+                                </div>
+                                <div class="line"></div>
+                                <div class="meta">QTY: <span x-text="item.quantity"></span></div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="sum-card totals">
+                        <div class="row"><span>Subtotal:</span><span x-text="format(subtotal)"></span></div>
+                        <div class="row"><span>Discount:</span><span>- $0.00</span></div>
+                        <div class="row"><span>Shipping:</span><span>Free</span></div>
+                        <div class="divider"></div>
+                        <div class="row total"><span>Total</span><span x-text="format(subtotal)"></span></div>
+                    </div>
+
+                    <div class="actions">
+                        <a href="javascript:void(0)" class="back" onclick="window.history.back();">
+                            <span class="arr">←</span> Go Back
+                        </a>
+                        <button class="btn" type="submit" @click="validateAndContinue($event)" :disabled="saving">
+                            <span x-show="!saving">Save and Continue</span>
+                            <span x-show="saving">Saving...</span>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </aside>
+    </section>
+</main>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('shippingPage', () => {
+            const component = createShippingComponent();
+            
+            component.validationError = '';
+            component.saving = false;
+            component.validateAndContinue = async function(event) {
+                event.preventDefault();
+                
+                const firstName = document.getElementById('first').value.trim();
+                const lastName = document.getElementById('last').value.trim();
+                const country = document.getElementById('country').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const street = document.getElementById('street').value.trim();
+                const city = document.getElementById('city').value.trim();
+                
+                if (!firstName) {
+                    this.validationError = 'First Name is required';
+                    document.getElementById('first').focus();
+                    return;
+                }
+                
+                if (!lastName) {
+                    this.validationError = 'Last Name is required';
+                    document.getElementById('last').focus();
+                    return;
+                }
+                
+                if (!country) {
+                    this.validationError = 'Country is required';
+                    document.getElementById('country').focus();
+                    return;
+                }
+                
+                if (!phone) {
+                    this.validationError = 'Phone Number is required';
+                    document.getElementById('phone').focus();
+                    return;
+                }
+                
+                if (!street) {
+                    this.validationError = 'Street Address is required';
+                    document.getElementById('street').focus();
+                    return;
+                }
+                
+                if (!city) {
+                    this.validationError = 'City is required';
+                    document.getElementById('city').focus();
+                    return;
+                }
+                
+                this.validationError = '';
+                this.saving = true;
+                
+                try {
+                    const shippingData = {
+                        firstName: firstName,
+                        lastName: lastName,
+                        country: country,
+                        phoneNumber: phone,
+                        streetAddress: street,
+                        city: city
+                    };
+                    
+                    const response = await authFetch('/api/shippings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(shippingData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to save shipping data: ${response.status}`);
+                    }
+                    
+                    const savedShipping = await response.json();
+                    
+                    localStorage.setItem('shippingId', savedShipping.id.toString());
+                    
+                    localStorage.setItem('shippingData', JSON.stringify({
+                        ...shippingData,
+                        id: savedShipping.id,
+                        phoneCode: document.querySelector('.select.code').value,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    window.location.href = '/order';
+                    
+                } catch (error) {
+                    console.error('Error saving shipping data:', error);
+                    this.validationError = 'Failed to save shipping information. Please try again.';
+                } finally {
+                    this.saving = false;
+                }
+            };
+            
+            return component;
+        });
+        
+        Alpine.data('shippingForm', () => ({
+            validationError: '',
+            
+            handleSubmit() {
+                const shippingComponent = Alpine.$data(document.querySelector('[x-data="shippingPage"]'));
+                if (shippingComponent && shippingComponent.validateAndContinue) {
+                    shippingComponent.validateAndContinue(event);
+                }
+            }
+        }));
+    });
+</script>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<div th:replace="~{fragments/header :: header-script}"></div>
+<div th:replace="~{fragments/footer :: footer-script}"></div>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Search • Lootsy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/variables.css}">
+    <link rel="stylesheet" th:href="@{/css/components.css}">
+    <link rel="stylesheet" th:href="@{/css/search.css}">
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <script th:src="@{/js/shared-utils.js}"></script>
+    <style>[x-cloak]{display:none!important}</style>
+    <script>
+        authGuard();
+        registerAlpineComponents();
+    </script>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container main">
+    <aside class="sidebar">
+        <div class="filter-card">
+            <h3 class="filter-heading">Filter By</h3>
+
+            <div class="filter-section" x-data="categoryFilter" x-init="init()">
+                <div class="section-title">Categories</div>
+
+                <template x-if="loading">
+                    <div style="padding: 10px; color: #666; font-size: 14px;">Loading categories...</div>
+                </template>
+
+                <template x-if="error">
+                    <div style="padding: 10px; color: #d00; font-size: 14px;" x-text="error"></div>
+                </template>
+
+                <template x-for="category in categories" :key="category.id">
+                    <label class="check">
+                        <input type="checkbox" :value="category.id" @change="onCategoryChange" />
+                        <span x-text="category.name"></span>
+                    </label>
+                </template>
+
+                <hr class="divider" />
+            </div>
+
+            <div class="filter-section" x-data="priceFilter" x-init="init()">
+                <div class="section-title">Price</div>
+
+                <div class="range-wrap">
+                    <input type="range" id="priceRange" min="0" max="1000" :value="maxPrice" @input="updatePrice" />
+                    <output id="priceValue" x-text="'$' + maxPrice"></output>
+                </div>
+                <div class="range-labels">
+                    <span>$0</span>
+                    <span>$1000</span>
+                </div>
+
+                <button class="btn btn--full" @click="applyFilters">Apply</button>
+            </div>
+        </div>
+    </aside>
+
+
+    <section class="results" x-data="searchResults" x-init="init()">
+        <div class="section-header">
+            <div>
+                <h1 x-text="query ? `Search Results for &quot;${query}&quot;` : 'All Products'"></h1>
+                <div class="meta" x-text="`${products.length} results found`"></div>
+            </div>
+        </div>
+
+        <template x-if="loading">
+            <div style="padding: 40px; text-align: center; color: #666;">Loading...</div>
+        </template>
+
+        <template x-if="error">
+            <div style="padding: 40px; text-align: center; color: #d00;" x-text="error"></div>
+        </template>
+
+        <div class="list">
+            <template x-for="product in products" :key="product.id">
+                <article class="item" @click="toDetails(product.id)" style="cursor: pointer;">
+                    <div class="thumb">
+                        <img :src="product.image" :alt="product.name" loading="lazy" 
+                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="ph" style="display: none;"></div>
+                    </div>
+                    <div class="info">
+                        <div>
+                            <div class="title" x-text="product.name"></div>
+                            <div class="price" x-text="'$' + (product.price || 0).toFixed(2)"></div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-mini" @click.stop>♡</button>
+                            <button class="btn-mini btn-mini--primary" @click.stop="addToCart(product.id)">Add to Cart</button>
+                        </div>
+                    </div>
+                </article>
+            </template>
+        </div>
+    </section>
+</main>
+
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('categoryFilter', () => ({
+            categories: [],
+            selectedCategories: [],
+            loading: true,
+            error: '',
+
+            async init() {
+                await this.loadCategories();
+            },
+
+            async loadCategories() {
+                this.loading = true;
+                this.error = '';
+                
+                try {
+                    const res = await authFetch('/api/categories');
+                    if (!res.ok) throw new Error('Failed to load categories');
+                    
+                    this.categories = await res.json();
+                } catch (e) {
+                    this.error = e.message || 'Failed to load categories';
+                    this.categories = [];
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            onCategoryChange(event) {
+                const categoryId = parseInt(event.target.value);
+                if (event.target.checked) {
+                    if (!this.selectedCategories.includes(categoryId)) {
+                        this.selectedCategories.push(categoryId);
+                    }
+                } else {
+                    this.selectedCategories = this.selectedCategories.filter(id => id !== categoryId);
+                }
+            }
+        }));
+
+        Alpine.data('priceFilter', () => ({
+            minPrice: 0,
+            maxPrice: 1000,
+
+            init() {
+                this.updateTooltip();
+            },
+
+            updatePrice(event) {
+                this.maxPrice = parseInt(event.target.value);
+                this.updateTooltip();
+            },
+
+            updateTooltip() {
+                const range = document.getElementById("priceRange");
+                const output = document.getElementById("priceValue");
+                if (range && output) {
+                    const value = this.maxPrice;
+                    const min = 0;
+                    const max = 1000;
+                    const percent = ((value - min) / (max - min)) * 100;
+                    output.style.left = `calc(${percent}% + (${8 - percent * 0.15}px))`;
+                }
+            },
+
+            applyFilters() {
+                const categoryComponent = Alpine.$data(document.querySelector('[x-data="categoryFilter"]'));
+                const selectedCategories = categoryComponent ? categoryComponent.selectedCategories : [];
+                
+                const searchComponent = Alpine.$data(document.querySelector('[x-data="searchResults"]'));
+                if (searchComponent) {
+                    searchComponent.selectedCategories = selectedCategories;
+                    searchComponent.minPrice = this.minPrice;
+                    searchComponent.maxPrice = this.maxPrice;
+                    searchComponent.searchProducts();
+                }
+            }
+        }));
+
+        Alpine.data('searchResults', () => ({
+            query: /*[[${query}]]*/ '',
+            products: [],
+            selectedCategories: [],
+            minPrice: null,
+            maxPrice: null,
+            loading: true,
+            error: '',
+
+            async init() {
+                const params = new URLSearchParams(location.search);
+                this.query = params.get('q') || this.query;
+                
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput && this.query) {
+                    searchInput.value = this.query;
+                }
+
+                await this.searchProducts();
+            },
+
+            async searchProducts() {
+                this.loading = true;
+                this.error = '';
+                
+                try {
+                    const url = new URL('/api/products', location.origin);
+                    if (this.query) {
+                        url.searchParams.set('search', this.query);
+                    }
+                    
+                    if (this.selectedCategories && this.selectedCategories.length > 0) {
+                        this.selectedCategories.forEach(categoryId => {
+                            url.searchParams.append('categories', categoryId.toString());
+                        });
+                    }
+                    
+                    if (this.minPrice !== null && this.maxPrice !== null) {
+                        url.searchParams.set('minPrice', this.minPrice.toString());
+                        url.searchParams.set('maxPrice', this.maxPrice.toString());
+                    }
+                    
+                    url.searchParams.set('pageIndex', '0');
+                    url.searchParams.set('pageSize', '20');
+
+                    const res = await authFetch(url);
+                    if (!res.ok) throw new Error('Search failed');
+                    
+                    const data = await res.json();
+                    const list = Array.isArray(data) ? data : (data.items ?? data.results ?? data.content ?? []);
+                    
+                    this.products = list.map(p => ({
+                        id: p.id ?? p.productId,
+                        name: p.name ?? p.title ?? 'Untitled',
+                        price: p.price != null ? Number(p.price) : null,
+                        image: p.imageUrlL ?? p.imageUrlM ?? p.imageUrlS ?? p.imageUrl ?? p.image ?? p.thumbnail ?? '',
+                        category: p.category?.name || p.categoryName || ''
+                    })).filter(p => p.id);
+                    
+                } catch (e) {
+                    this.error = e.message || 'Search failed';
+                    this.products = [];
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            toDetails(id) {
+                location.assign(`/details?id=${encodeURIComponent(id)}`);
+            },
+
+            async addToCart(productId) {
+                try {
+                    await window.addToCart(productId, 1);
+                } catch (e) {
+                    alert(e?.message || 'Add to cart failed');
+                }
+            }
+        }));
+    });
+</script>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<div th:replace="~{fragments/header :: header-script}"></div>
+<div th:replace="~{fragments/footer :: footer-script}"></div>
+</body>
+</html>

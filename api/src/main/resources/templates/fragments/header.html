@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head></head>
+<body>
+<header class="header" th:fragment="header">
+    <div class="header__content wrap">
+        <a th:href="@{/home}" class="logo" style="text-decoration: none; color: inherit;">
+            <div class="logo__badge">L</div>
+            Lootsy
+        </a>
+        <div class="search">
+            <input type="text" id="searchInput" placeholder="Search products…" onkeypress="if(event.key==='Enter') doSearch()"/>
+            <a class="go" href="#" onclick="doSearch()">Search</a>
+        </div>
+        <nav class="nav">
+            <a class="nav__link" th:href="@{/home}">Home</a>
+            <a class="nav__link" th:href="@{/search}">Products</a>
+            <a class="nav__link" href="#" onclick="toggleOrdersPopup(event)">Orders</a>
+            <a class="nav__link" href="#">Blog</a>
+            <a class="nav__link" href="#">Contact</a>
+        </nav>
+        <div class="header__icons">
+            <div class="account account-dropdown">
+                <button id="accountBtn" class="icon-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="accountMenu" title="Account">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z" stroke="#0f172a" stroke-width="1.6"/>
+                        <path d="M4 20a8 8 0 0 1 16 0" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                </button>
+
+                <ul id="accountMenu" class="account-menu" role="menu" aria-labelledby="accountBtn">
+                    <li role="none"><a class="account-menu__link" role="menuitem" th:href="@{/account}">My Account</a></li>
+                    <li role="none"><a class="account-menu__link" role="menuitem" href="#">My Favorite</a></li>
+                    <li role="none"><a class="account-menu__link" role="menuitem" href="#">My Orders</a></li>
+                    <li role="none"><a class="account-menu__link" role="menuitem" href="#">Settings</a></li>
+                    <li role="none"><a class="account-menu__link account-menu__link--danger logout" role="menuitem" href="#">Log Out</a></li>
+                </ul>
+            </div>
+
+            <div class="cart" x-data="miniCart" x-init="init" style="position:relative;">
+                <button class="icon-btn" @click="toggle()" aria-expanded="false" :aria-expanded="open">
+                    🛒
+                    <span x-show="count>0" x-text="count"
+                          style="margin-left:6px; padding:0 6px; border-radius:10px; background:#1e40af; color:#fff; font-size:12px;"></span>
+                </button>
+
+                <div class="panel" x-show="open" x-transition @click.outside="open=false"
+                     style="position:absolute; right:0; top:44px; width:360px; max-height:70vh; overflow:auto; background:#fff;
+                     border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.08); padding:16px; z-index:50;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0;">My Bag</h3>
+                        <button @click="open=false" title="Close" class="icon-btn">✕</button>
+                    </div>
+
+                    <template x-if="!items.length">
+                        <p class="muted" style="margin:16px 0;">Your bag is empty.</p>
+                    </template>
+
+                    <div>
+                        <template x-for="it in items" :key="it.id">
+                            <div style="display:flex; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid #f1f5f9;">
+                                <img :src="it.image" alt="" style="width:56px; height:56px; object-fit:cover; border-radius:8px;"
+                                     onerror="this.style.display='none'">
+                                <div style="flex:1;">
+                                    <div style="font-weight:600;" x-text="format(it.price)"></div>
+                                    <div x-text="it.name" style="font-size:14px;"></div>
+                                    <div style="font-size:12px; opacity:.7;">QTY: <span x-text="it.quantity"></span></div>
+                                </div>
+                                <button class="icon-btn" title="Remove" @click="remove(it.id)">🗑</button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div style="margin-top:12px; display:grid; row-gap:6px; font-size:14px;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Subtotal:</span><span x-text="format(subtotal)"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Shipping:</span><span>Free</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-weight:700; font-size:16px; margin-top:6px;">
+                            <span>Total</span><span x-text="format(subtotal)"></span>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin-top:12px;">
+                        <a class="btn" th:href="@{/shipping}" style="flex:1;">Checkout</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="ordersPopup" class="orders-popup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+                <div class="orders-popup-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; padding: 24px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 600;">My Orders</h2>
+                        <button onclick="closeOrdersPopup()" style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 4px 8px; border-radius: 4px; color: #666;" title="Close">×</button>
+                    </div>
+                    
+                    <div id="ordersContent">
+                        <div id="ordersLoading" style="text-align: center; padding: 40px;">
+                            <p>Loading your orders...</p>
+                        </div>
+                        
+                        <div id="ordersError" style="display: none; text-align: center; padding: 40px; color: #dc2626;">
+                            <p id="ordersErrorMessage">Failed to load orders. Please try again.</p>
+                            <button onclick="loadUserOrders()" style="margin-top: 12px; padding: 8px 16px; background: #1e40af; color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
+                        </div>
+                        
+                        <div id="ordersEmpty" style="display: none; text-align: center; padding: 40px; color: #666;">
+                            <p>You haven't placed any orders yet.</p>
+                            <a th:href="@{/home}" style="margin-top: 12px; display: inline-block; padding: 8px 16px; background: #1e40af; color: white; text-decoration: none; border-radius: 6px;">Start Shopping</a>
+                        </div>
+                        
+                        <div id="ordersList" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<script th:fragment="header-script">
+window.toggleOrdersPopup = function(event) {
+    event.preventDefault();
+    const popup = document.getElementById('ordersPopup');
+    if (popup.style.display === 'none' || !popup.style.display) {
+        window.openOrdersPopup();
+    } else {
+        window.closeOrdersPopup();
+    }
+};
+
+window.openOrdersPopup = function() {
+    const popup = document.getElementById('ordersPopup');
+    popup.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    window.loadUserOrders();
+};
+
+window.closeOrdersPopup = function() {
+    const popup = document.getElementById('ordersPopup');
+    popup.style.display = 'none';
+    document.body.style.overflow = 'auto';
+};
+
+window.loadUserOrders = async function() {
+    const loadingEl = document.getElementById('ordersLoading');
+    const errorEl = document.getElementById('ordersError');
+    const emptyEl = document.getElementById('ordersEmpty');
+    const listEl = document.getElementById('ordersList');
+    
+    loadingEl.style.display = 'block';
+    errorEl.style.display = 'none';
+    emptyEl.style.display = 'none';
+    listEl.style.display = 'none';
+    
+    try {
+        if (typeof authFetch === 'undefined') {
+            throw new Error('Authentication required. Please log in.');
+        }
+        
+        const response = await authFetch('/api/orders/user?pageIndex=0&pageSize=20');
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch orders: ' + response.status);
+        }
+        
+        const orders = await response.json();
+        
+        loadingEl.style.display = 'none';
+        
+        if (!orders || orders.length === 0) {
+            emptyEl.style.display = 'block';
+            return;
+        }
+        
+        displayOrders(orders);
+        listEl.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        document.getElementById('ordersErrorMessage').textContent = error.message || 'Failed to load orders. Please try again.';
+    }
+};
+
+function displayOrders(orders) {
+    const listEl = document.getElementById('ordersList');
+    
+    const ordersArray = Array.isArray(orders) ? orders : Array.from(orders);
+    
+    ordersArray.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    listEl.innerHTML = ordersArray.map(order => {
+        const itemsHtml = order.items && order.items.length > 0 ? 
+            '<div style="border-top: 1px solid #f1f5f9; padding-top: 12px;">' +
+                '<p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 500;">Items (' + order.items.length + '):</p>' +
+                '<div style="display: grid; gap: 8px;">' +
+                    Array.from(order.items).slice(0, 3).map(item => 
+                        '<div style="display: flex; justify-content: space-between; font-size: 14px;">' +
+                            '<span>' + (item.productName || 'Product') + ' × ' + item.quantity + '</span>' +
+                            '<span>$' + (item.unitPrice * item.quantity).toFixed(2) + '</span>' +
+                        '</div>'
+                    ).join('') +
+                    (order.items.length > 3 ? 
+                        '<div style="font-size: 12px; color: #666; font-style: italic;">' +
+                            '... and ' + (order.items.length - 3) + ' more items' +
+                        '</div>' : '') +
+                '</div>' +
+            '</div>' : '';
+            
+        return '<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px;">' +
+            '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">' +
+                '<div>' +
+                    '<h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Order #' + order.id + '</h3>' +
+                    '<p style="margin: 0; font-size: 14px; color: #666;">' +
+                        formatOrderDate(order.createdAt) +
+                    '</p>' +
+                '</div>' +
+                '<div style="text-align: right;">' +
+                    '<div style="font-size: 18px; font-weight: 600; color: #1e40af;">' +
+                        '$' + order.totalAmount.toFixed(2) +
+                    '</div>' +
+                    '<div style="font-size: 12px; padding: 2px 8px; border-radius: 12px; background: ' + getStatusColor(order.orderStatus) + '; color: white; margin-top: 4px;">' +
+                        order.orderStatus +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            itemsHtml +
+        '</div>';
+    }).join('');
+}
+
+function formatOrderDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function getStatusColor(status) {
+    switch (status?.toUpperCase()) {
+        case 'PENDING': return '#2563eb';
+        case 'CONFIRMED': return '#2563eb';
+        case 'SHIPPED': return '#2563eb';
+        case 'DELIVERED': return '#2563eb';
+        case 'CANCELLED': return '#2563eb';
+        default: return '#2563eb';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    document.addEventListener('click', function(event) {
+        const popup = document.getElementById('ordersPopup');
+        if (popup && event.target === popup) {
+            window.closeOrdersPopup();
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const popup = document.getElementById('ordersPopup');
+            if (popup && popup.style.display !== 'none') {
+                window.closeOrdersPopup();
+            }
+        }
+    });
+});
+</script>
+</body>
+</html>

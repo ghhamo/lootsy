@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Sign up</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/variables.css}">
+    <link rel="stylesheet" th:href="@{/css/components.css}">
+    <link rel="stylesheet" th:href="@{/css/signup.css}">
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <style>[x-cloak]{display:none!important}</style>
+</head>
+<body>
+<main class="page--auth">
+    <div class="auth-card">
+        <header class="brand">
+            <div class="logo__badge">L</div>
+            <div class="brand-name">Lootsy</div>
+        </header>
+
+        <section class="content">
+            <div class="art" aria-hidden="true">
+                <div class="phone">
+                    <div class="screen">
+                        <div class="avatar">👤</div>
+                    </div>
+                </div>
+                <div class="pager"><span class="active"></span><span></span></div>
+            </div>
+
+            <div class="panel">
+                <h2>Sign up</h2>
+                <p>Let's get you all set up so you can access your personal account.</p>
+
+                <form x-data="registerForm" @submit.prevent="submit" novalidate>
+                    <div class="row">
+                        <div class="field">
+                            <label for="name">First Name</label>
+                            <input class="input" type="text" id="name" placeholder="John" x-model.trim="name"
+                                   required>
+                        </div>
+                        <div class="field">
+                            <label for="surname">Last Name</label>
+                            <input class="input" type="text" id="surname" placeholder="Doe" x-model.trim="surname"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="field">
+                            <label for="email">Email</label>
+                            <input class="input" type="email" id="email" placeholder="john.doe@gmail.com"
+                                   x-model.trim="email" autocomplete="email" required>
+                        </div>
+                        <div class="field">
+                            <label for="phone">Phone Number</label>
+                            <input class="input" type="tel" id="phone" placeholder="+1 555 555 5555"
+                                   x-model.trim="phone">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <input class="input" type="password" id="password" placeholder="••••••••" x-model="password">
+                    </div>
+                    <div class="field">
+                        <label for="confirm">Confirm Password</label>
+                        <input class="input" type="password" id="confirm" placeholder="••••••••" x-model="confirm"
+                               required>
+                    </div>
+
+                    <p class="subtle" x-show="error" x-text="error" style="color:#d00" role="alert"
+                       aria-live="polite"></p>
+
+                    <button class="btn" type="submit" :disabled="loading">
+                        <span x-show="!loading">Create account</span>
+                        <span x-show="loading">Creating…</span>
+                    </button>
+
+                    <p class="subtle">Already have an account? <a th:href="@{/login}">Login</a></p>
+                </form>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('registerForm', () => ({
+        name:'', surname:'', email:'', phone:'', password:'', confirm:'',
+        loading:false, error:'',
+        async submit(){
+          this.error='';
+          if (this.password !== this.confirm) { this.error = 'Passwords do not match.'; return; }
+
+          this.loading = true;
+          try {
+            const API = '/api/users';
+
+            const res = await fetch(API, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({
+                name:        this.name,
+                surname:     this.surname,
+                email:       this.email,
+                phoneNumber: this.phone,
+                password:    this.password
+              }),
+            });
+
+            if (!res.ok) {
+              const text = await res.text().catch(()=>'');
+              console.error('Register failed:', res.status, res.statusText, text);
+              throw new Error(text || `Request failed (${res.status})`);
+            }
+
+            location.assign('/login');
+          } catch (e) {
+            this.error = e?.message || 'Sign up failed.';
+          } finally {
+            this.loading = false;
+          }
+        }
+      }))
+    });
+</script>
+</body>
+</html>

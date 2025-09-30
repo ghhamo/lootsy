@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Lootsy • My Account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/variables.css}">
+    <link rel="stylesheet" th:href="@{/css/components.css}">
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <script th:src="@{/js/shared-utils.js}"></script>
+    <style>[x-cloak]{display:none!important}</style>
+
+    <script>
+        authGuard();
+        registerAlpineComponents();
+    </script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container" style="padding: 2rem 0;">
+    <div x-data="accountPage" x-init="init()" style="max-width: 800px; margin: 0 auto;">
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem; font-weight: 600; margin: 0 0 0.5rem 0; color: var(--color-text);">My Account</h1>
+            <p style="color: var(--color-text-muted); margin: 0;">Manage your account information and settings</p>
+        </div>
+
+        <template x-if="loading">
+            <div style="text-align: center; padding: 3rem;">
+                <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid #f3f4f6; border-top: 3px solid var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="margin-top: 1rem; color: var(--color-text-muted);">Loading your account information...</p>
+            </div>
+        </template>
+
+        <template x-if="error">
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; margin-bottom: 2rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: #dc2626; font-size: 1.2rem;">⚠️</span>
+                    <p style="margin: 0; color: #dc2626; font-weight: 500;" x-text="error"></p>
+                </div>
+                <button @click="init()" style="margin-top: 0.75rem; padding: 0.5rem 1rem; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                    Try Again
+                </button>
+            </div>
+        </template>
+
+        <template x-if="!loading && !error && account">
+            <div>
+                <div style="background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0; color: var(--color-text);">Personal Information</h2>
+                        <button @click="startEdit()" x-show="!editing" class="btn-secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Edit</button>
+                        <div x-show="editing" style="display: flex; gap: 0.5rem;">
+                            <button @click="saveEdit()" :disabled="saving" class="btn-secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem; background: #1e40af; color: white; border-color: #1e40af;">
+                                <span x-show="!saving">Save</span>
+                                <span x-show="saving">Saving...</span>
+                            </button>
+                            <button @click="cancelEdit()" :disabled="saving" class="btn-secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; gap: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--color-text-muted); margin-bottom: 0.25rem;">First Name</label>
+                                <div x-show="!editing" style="padding: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; color: var(--color-text);" x-text="account.name"></div>
+                                <input x-show="editing" x-model="editForm.name" type="text" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 6px; color: var(--color-text);" required>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--color-text-muted); margin-bottom: 0.25rem;">Last Name</label>
+                                <div x-show="!editing" style="padding: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; color: var(--color-text);" x-text="account.surname"></div>
+                                <input x-show="editing" x-model="editForm.surname" type="text" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 6px; color: var(--color-text);" required>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--color-text-muted); margin-bottom: 0.25rem;">Email Address</label>
+                            <div style="padding: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; color: var(--color-text);" x-text="account.email"></div>
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--color-text-muted); margin-bottom: 0.25rem;">Phone Number</label>
+                            <div x-show="!editing" style="padding: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; color: var(--color-text);" x-text="account.phoneNumber || 'Not provided'"></div>
+                            <input x-show="editing" x-model="editForm.phoneNumber" type="tel" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 6px; color: var(--color-text);" placeholder="Enter phone number">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--color-text-muted); margin-bottom: 0.25rem;">Account Status</label>
+                            <div style="padding: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; display: flex; align-items: center; gap: 0.5rem;">
+                                <span :style="'width: 8px; height: 8px; border-radius: 50%; background: ' + (account.enabled ? '#10b981' : '#ef4444')"></span>
+                                <span :style="'color: ' + (account.enabled ? '#10b981' : '#ef4444') + '; font-weight: 500;'" x-text="account.enabled ? 'Active' : 'Inactive'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0 0 1.5rem 0; color: var(--color-text);">Account Overview</h2>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        
+                        <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, var(--brand), var(--brand-2)); border-radius: 8px; color: white;">
+                            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">📦</div>
+                            <div style="font-size: 0.875rem; opacity: 0.9;">Total Orders</div>
+                            <div style="font-size: 1rem; font-weight: 600;" x-text="account.stats.totalOrders || '0'"></div>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, var(--brand), var(--brand-2)); border-radius: 8px; color: white;">
+                            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">💰</div>
+                            <div style="font-size: 0.875rem; opacity: 0.9;">Total Spent</div>
+                            <div style="font-size: 1rem; font-weight: 600;" x-text="'$' + (account.stats.totalSpent || 0).toFixed(2)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0 0 1.5rem 0; color: var(--color-text);">Quick Actions</h2>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <a href="#" onclick="toggleOrdersPopup(event)" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 8px; text-decoration: none; color: var(--color-text); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--color-primary)'; this.style.backgroundColor='#f8fafc'" onmouseout="this.style.borderColor='var(--color-border)'; this.style.backgroundColor='white'">
+                            <div style="width: 40px; height: 40px; background: #eff6ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">📋</div>
+                            <div>
+                                <div style="font-weight: 500; margin-bottom: 0.25rem;">View Orders</div>
+                                <div style="font-size: 0.875rem; color: var(--color-text-muted);">Check your order history</div>
+                            </div>
+                        </a>
+                        
+                        <a th:href="@{/search}" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 8px; text-decoration: none; color: var(--color-text); transition: all 0.2s;" onmouseover="this.style.borderColor='var(--color-primary)'; this.style.backgroundColor='#f8fafc'" onmouseout="this.style.borderColor='var(--color-border)'; this.style.backgroundColor='white'">
+                            <div style="width: 40px; height: 40px; background: #f0fdf4; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🛍️</div>
+                            <div>
+                                <div style="font-weight: 500; margin-bottom: 0.25rem;">Continue Shopping</div>
+                                <div style="font-size: 0.875rem; color: var(--color-text-muted);">Browse our products</div>
+                            </div>
+                        </a>
+                        
+                        <button @click="logout()" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid #fecaca; border-radius: 8px; background: white; color: #dc2626; cursor: pointer; transition: all 0.2s; width: 100%;" onmouseover="this.style.backgroundColor='#fef2f2'" onmouseout="this.style.backgroundColor='white'">
+                            <div style="width: 40px; height: 40px; background: #fef2f2; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🚪</div>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 500; margin-bottom: 0.25rem;">Sign Out</div>
+                                <div style="font-size: 0.875rem; opacity: 0.8;">Logout from your account</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('accountPage', () => ({
+        loading: true,
+        error: null,
+        account: null,
+        editing: false,
+        editForm: {
+            name: '',
+            surname: '',
+            phoneNumber: ''
+        },
+        saving: false,
+
+        async init() {
+            this.loading = true;
+            this.error = null;
+            
+            try {
+                // Check if authFetch is available (from shared-utils.js)
+                if (typeof authFetch === 'undefined') {
+                    throw new Error('Authentication required. Please log in.');
+                }
+                
+                // Fetch account information
+                const response = await authFetch('/api/users/account');
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Please log in to view your account.');
+                    }
+                    throw new Error('Failed to load account information: ' + response.status);
+                }
+                
+                this.account = await response.json();
+                
+            } catch (error) {
+                console.error('Error loading account:', error);
+                this.error = error.message || 'Failed to load account information. Please try again.';
+                
+                // If authentication error, redirect to login after a delay
+                if (error.message.includes('log in') || error.message.includes('Authentication')) {
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                }
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        logout() {
+            if (confirm('Are you sure you want to sign out?')) {
+                // Use the same logout function as the header
+                if (typeof window.logout === 'function') {
+                    window.logout();
+                } else {
+                    // Fallback: same logic as shared-utils.js logout function
+                    try {
+                        // Attempt to call logout endpoint (may not exist)
+                        fetch('/api/logout', { 
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('auth.token')}`
+                            }
+                        }).catch(e => console.error('Logout error:', e));
+                    } finally {
+                        // Clear authentication tokens (same keys as header logout)
+                        localStorage.removeItem('auth.token');
+                        localStorage.removeItem('auth.expiresAt');
+                        
+                        // Redirect to home page (same as header logout)
+                        location.replace('/');
+                    }
+                }
+            }
+        },
+
+        startEdit() {
+            this.editing = true;
+            this.editForm.name = this.account.name;
+            this.editForm.surname = this.account.surname;
+            this.editForm.phoneNumber = this.account.phoneNumber || '';
+        },
+
+        cancelEdit() {
+            this.editing = false;
+            this.editForm = {
+                name: '',
+                surname: '',
+                phoneNumber: ''
+            };
+        },
+
+        async saveEdit() {
+            if (!this.editForm.name.trim() || !this.editForm.surname.trim()) {
+                alert('Name and surname are required');
+                return;
+            }
+
+            this.saving = true;
+            try {
+                const response = await authFetch('/api/users/account', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: this.editForm.name.trim(),
+                        surname: this.editForm.surname.trim(),
+                        phoneNumber: this.editForm.phoneNumber.trim() || null
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update account: ' + response.status);
+                }
+
+                this.account = await response.json();
+                this.editing = false;
+                this.editForm = {
+                    name: '',
+                    surname: '',
+                    phoneNumber: ''
+                };
+            } catch (error) {
+                console.error('Error updating account:', error);
+                alert(error.message || 'Failed to update account. Please try again.');
+            } finally {
+                this.saving = false;
+            }
+        }
+    }));
+});
+</script>
+
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.btn-secondary {
+    background: #f8fafc;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+    border-color: var(--color-primary);
+}
+</style>
+
+<div th:replace="~{fragments/header :: header-script}"></div>
+<div th:replace="~{fragments/footer :: footer-script}"></div>
+</body>
+</html>

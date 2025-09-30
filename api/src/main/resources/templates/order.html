@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Place Order</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/variables.css}">
+    <link rel="stylesheet" th:href="@{/css/components.css}">
+    <link rel="stylesheet" th:href="@{/css/order.css}">
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <script th:src="@{/js/shared-utils.js}"></script>
+    <script>
+        authGuard();
+        registerAlpineComponents();
+    </script>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container" x-data="orderPage" x-init="init">
+    <h1 class="page-title">Review Your Order</h1>
+
+    <template x-if="loading">
+        <div class="loading-container">
+            <p>Loading your order...</p>
+        </div>
+    </template>
+
+    <template x-if="error && !loading">
+        <div class="error-container">
+            <div class="error-card">
+                <p x-text="error"></p>
+                <div class="error-actions">
+                    <a th:href="@{/home}" class="btn">Go to Home</a>
+                    <a th:href="@{/shipping}" class="btn btn-secondary">Back to Shipping</a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="!loading && !error && items.length > 0">
+        <div class="order-content">
+            <section class="order-section">
+                <h2 class="section-title">Shipping Information</h2>
+                <div class="shipping-info" x-show="shippingData">
+                    <div class="info-row">
+                        <span class="label">Name:</span>
+                        <span x-text="shippingData ? `${shippingData.firstName} ${shippingData.lastName}` : 'N/A'"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Address:</span>
+                        <span x-text="shippingData ? `${shippingData.streetAddress}, ${shippingData.city}, ${shippingData.country}` : 'N/A'"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Phone:</span>
+                        <span x-text="shippingData ? shippingData.phoneNumber : 'N/A'"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="order-section">
+                <h2 class="section-title">Order Items</h2>
+                <div class="order-items">
+                    <template x-for="item in items" :key="item.id">
+                        <div class="order-item">
+                            <div class="item-image">
+                                <img :src="item.image || 'https://via.placeholder.com/80x80.png'" 
+                                     :alt="item.name" 
+                                     onerror="this.src='https://via.placeholder.com/80x80.png'">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name" x-text="item.name"></h3>
+                                <div class="item-meta">
+                                    <span class="item-quantity">Qty: <span x-text="item.quantity"></span></span>
+                                </div>
+                            </div>
+                            <div class="item-total">
+                                <span x-text="format(item.total)"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </section>
+
+            <section class="order-section">
+                <h2 class="section-title">Order Summary</h2>
+                <div class="order-summary">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span x-text="format(subtotal)"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Shipping:</span>
+                        <span>Free</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tax:</span>
+                        <span>$0.00</span>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-row total">
+                        <span>Total:</span>
+                        <span x-text="format(total)"></span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="order-actions">
+                <button class="btn btn-secondary" @click="goBack()" :disabled="placingOrder">
+                    <span class="arr">←</span> Go Back
+                </button>
+                <button class="btn btn-primary" @click="placeOrder()" :disabled="placingOrder">
+                    <span x-show="!placingOrder">Place Order</span>
+                    <span x-show="placingOrder">Placing Order...</span>
+                </button>
+            </div>
+        </div>
+    </template>
+</main>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('orderPage', () => ({
+            loading: true,
+            error: '',
+            items: [],
+            subtotal: 0,
+            total: 0,
+            shippingData: null,
+            placingOrder: false,
+            unsubscribe: null,
+
+            async init() {
+                const shippingId = localStorage.getItem('shippingId');
+                if (!shippingId) {
+                    this.error = 'No shipping information found. Please complete shipping first.';
+                    this.loading = false;
+                    return;
+                }
+
+                const shippingDataStr = localStorage.getItem('shippingData');
+                if (shippingDataStr) {
+                    try {
+                        this.shippingData = JSON.parse(shippingDataStr);
+                    } catch (e) {
+                        console.error('Error parsing shipping data:', e);
+                    }
+                }
+
+                this.unsubscribe = window.CartStore.subscribe((cart) => {
+                    this.updateCartDisplay(cart);
+                    this.loading = false;
+                });
+                
+                try {
+                    const cart = await window.CartStore.getCart();
+                    this.updateCartDisplay(cart);
+                } catch (e) {
+                    console.error('Failed to load cart:', e);
+                    this.error = 'Failed to load cart items. Please try again.';
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            destroy() {
+                if (this.unsubscribe) {
+                    this.unsubscribe();
+                }
+            },
+
+            updateCartDisplay(cart) {
+                this.error = '';
+                if (cart && cart.items && cart.items.length > 0) {
+                    this.items = cart.items.map(item => ({
+                        id: item.productId,
+                        name: item.name || 'Product',
+                        price: parseFloat(item.price) || 0,
+                        quantity: item.quantity || 1,
+                        image: item.imageUrl || '',
+                        total: (parseFloat(item.price) || 0) * (item.quantity || 1)
+                    }));
+                    this.subtotal = this.items.reduce((sum, item) => sum + item.total, 0);
+                    this.total = this.subtotal;
+                } else {
+                    this.items = [];
+                    this.subtotal = 0;
+                    this.total = 0;
+                    if (!this.loading) {
+                        this.error = 'Your cart is empty. Please add items to your cart first.';
+                    }
+                }
+            },
+
+            async placeOrder() {
+                if (this.placingOrder) return;
+                
+                const shippingId = localStorage.getItem('shippingId');
+                if (!shippingId) {
+                    this.error = 'No shipping information found. Please complete shipping first.';
+                    return;
+                }
+
+                if (this.items.length === 0) {
+                    this.error = 'Your cart is empty. Please add items to your cart first.';
+                    return;
+                }
+
+                this.placingOrder = true;
+                this.error = '';
+
+                try {
+                    const orderData = {
+                        shippingId: parseInt(shippingId),
+                        totalAmount: this.total,
+                        currency: 'USD'
+                    };
+
+                    const response = await authFetch('/api/orders', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(orderData)
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Failed to place order: ${response.status} - ${errorText}`);
+                    }
+
+                    const order = await response.json();
+                    
+                    localStorage.removeItem('shippingId');
+                    localStorage.removeItem('shippingData');
+                    
+                    await window.CartStore.invalidate();
+                    
+                    localStorage.setItem('lastOrderId', order.id.toString());
+                    
+                    window.location.href = '/home';
+                    
+                } catch (error) {
+                    console.error('Error placing order:', error);
+                    this.error = error.message || 'Failed to place order. Please try again.';
+                } finally {
+                    this.placingOrder = false;
+                }
+            },
+
+            format(price) {
+                return '$' + (price || 0).toFixed(2);
+            },
+
+            goBack() {
+                window.history.back();
+            }
+        }));
+    });
+</script>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<div th:replace="~{fragments/header :: header-script}"></div>
+<div th:replace="~{fragments/footer :: footer-script}"></div>
+</body>
+</html>

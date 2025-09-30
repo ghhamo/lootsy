@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Lootsy • Product Details</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/variables.css}"/>
+    <link rel="stylesheet" th:href="@{/css/components.css}"/>
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <script th:src="@{/js/shared-utils.js}"></script>
+    <style>
+        [x-cloak]{display:none!important}.wrap{max-width:980px;margin:0 auto;padding:24px}.gallery img{max-width:420px;border-radius:12px}.price{font-weight:600;font-size:18px}.meta .category{font-size:12px;opacity:.7}
+    </style>
+    <script>
+        authGuard();
+        registerAlpineComponents();
+
+        document.addEventListener('alpine:init', () => {
+          Alpine.data('details', () => ({
+            qp: new URLSearchParams(location.search),
+            p: null,
+            qty: 1,
+            loading: true,
+            error: '',
+            _initialized: false,
+            async init(){
+              if (this._initialized) {
+                return;
+              }
+              this._initialized = true;
+              
+              try{
+                const id   = this.qp.get('id') || /*[[${productId}]]*/ '';
+                const name = this.qp.get('name');
+                const cat  = this.qp.get('category');
+                const price= this.qp.get('price');
+
+                if (id) {
+                  const r = await authFetch(`/api/products/by/${encodeURIComponent(id)}`);
+                  if (r.ok) {
+                    const rawData = await r.json();
+                    this.p = this.normalize(rawData, id);
+                  }
+                }
+
+                if (!this.p && (name || price || cat)) {
+                  const url = new URL('/api/products', location.origin);
+                  if (name)  url.searchParams.set('name', name);
+                  if (cat)   url.searchParams.set('category', cat);
+                  if (price) url.searchParams.set('price', price);
+                  const r = await authFetch(url);
+                  if (r.ok) {
+                    const data = await r.json();
+                    const item = Array.isArray(data) ? data[0] : (data.item ?? data.result ?? data);
+                    if (item) {
+                      this.p = this.normalize(item, id);
+                    }
+                  }
+                }
+
+                if (!this.p) throw new Error('Product not found');
+              }catch(e){ 
+                this.error = e?.message || 'Error'; 
+              }
+              finally{ this.loading=false; }
+            },
+            normalize(d, fallbackId = null){
+              return {
+                id:   d.id ?? d.productId ?? d.sku ?? fallbackId,
+                name: d.name ?? d.title ?? 'Untitled',
+                category: d.categoryName ?? '',
+                description: d.description ?? '',
+                price: d.price != null ? Number(d.price) : null,
+                image: d.imageUrl || ''
+              };
+            },
+            async addToCart(){
+              try{
+                if (!window.addToCart) {
+                  throw new Error('window.addToCart function not available');
+                }
+                
+                if (!this.p || !this.p.id) {
+                  throw new Error('Product ID not available');
+                }
+                
+                await window.addToCart(this.p.id, Number(this.qty)||1);
+              }catch(e){ 
+                alert(e?.message || 'Add to cart failed'); 
+              }
+            }
+          }));
+        });
+    </script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container" x-data="details" x-init="init()">
+    <template x-if="loading"><p>Loading…</p></template>
+    <template x-if="error && !loading"><p style="color:#d00" x-text="error"></p></template>
+
+    <template x-if="p">
+        <div class="row" style="gap:28px; align-items:flex-start; display:flex; flex-wrap:wrap;">
+            <div class="gallery"><img :src="p.image" :alt="p.name" loading="lazy" onerror="this.style.display='none'">
+            </div>
+            <section class="info" style="min-width:280px;flex:1;">
+                <h1 x-text="p.name"></h1>
+                <div class="meta"><span class="category" x-show="p.category" x-text="p.category"></span></div>
+                <p style="white-space:pre-wrap" x-text="p.description"></p>
+                <p class="price" x-text="p.price != null ? ('$' + p.price.toFixed(2)) : ''"></p>
+                <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+                    <input type="number" min="1" step="1" x-model.number="qty"
+                           style="width:80px; padding:8px; border:1px solid #ddd; border-radius:8px;">
+                    <button class="btn" @click="addToCart()">Add to Cart</button>
+                    <a class="btn" th:href="@{/home}">Back</a>
+                </div>
+            </section>
+        </div>
+    </template>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<div th:replace="~{fragments/header :: header-script}"></div>
+<div th:replace="~{fragments/footer :: footer-script}"></div>
+</body>
+</html>

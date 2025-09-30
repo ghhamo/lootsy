@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head></head>
+<body>
+<footer class="footer" th:fragment="footer">
+    <div class="footer__top">
+        <div class="brand-col">
+            <div class="logo">
+                <div class="logo__badge">L</div>
+                Lootsy
+            </div>
+            <div class="muted">Premium accessories and gadgets for your favorite consoles and PCs.</div>
+        </div>
+        <div>
+            <h4>Menu</h4>
+            <div class="footer__links">
+                <a th:href="@{/home}">Home</a>
+                <a th:href="@{/search}">Collection</a>
+                <a th:href="@{/search}">Products</a>
+            </div>
+        </div>
+        <div>
+            <h4>Help</h4>
+            <div class="footer__links">
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+                <a href="#">FAQ</a>
+            </div>
+        </div>
+        <div class="newsletter">
+            <p>
+                Be the first to know about our biggest and best sales.
+                We'll never send more than one email a month.
+            </p>
+            <div class="email-row">
+                <label><input type="email" placeholder="Enter your email"></label>
+                <button class="btn btn--sm" type="button" onclick="subscribeNewsletter()">Send</button>
+            </div>
+        </div>
+    </div>
+    <div class="footer__bottom">
+        <div>&copy; 2024 Lootsy. All rights reserved.</div>
+        <div class="footer__social">
+            <a href="#" class="social-icon" title="Facebook">f</a>
+            <a href="#" class="social-icon" title="Twitter">t</a>
+            <a href="#" class="social-icon" title="Instagram">i</a>
+        </div>
+    </div>
+</footer>
+
+<script th:fragment="footer-script">
+function subscribeNewsletter() {
+    const emailInput = document.querySelector('.newsletter input[type="email"]');
+    const email = emailInput?.value.trim();
+    
+    if (!email) {
+        alert('Please enter your email address.');
+        return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        alert('Please enter a valid email address.');
+        return;
+    }
+    
+    alert('Thank you for subscribing! We\'ll keep you updated on our latest deals.');
+    emailInput.value = '';
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.matches('.newsletter input[type="email"]')) {
+        e.preventDefault();
+        subscribeNewsletter();
+    }
+});
+</script>
+</body>
+</html>

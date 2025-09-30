@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Lootsy • Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/variables.css}">
+    <link rel="stylesheet" th:href="@{/css/components.css}">
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <script th:src="@{/js/shared-utils.js}"></script>
+    <style>[x-cloak]{display:none!important}</style>
+
+    <script>
+        authGuard();
+        registerAlpineComponents();
+    </script>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<section class="container hero">
+    <div class="hero__content">
+        <h1 class="hero__title">Providing services at<br>your door</h1>
+        <p class="hero__description">
+            We deliver reliable, high-quality devices and services worldwide to
+            enhance your smart experience. From console accessories to
+            workstation gear — fast, easy, and secure.
+        </p>
+        <div style="display:flex; gap:12px;">
+            <a class="btn" href="#">Learn More</a>
+        </div>
+    </div>
+    <div class="hero__image" aria-hidden="true"></div>
+</section>
+
+<section class="container section">
+    <div class="section__header">
+        <h2 class="section__title">New Products</h2>
+        <a th:href="@{/search}" class="section__link">See all</a>
+    </div>
+
+    <div class="grid" x-data="productGrid('/api/products?pageIndex=0&pageSize=4')" x-init="init()">
+        <template x-if="loading">
+            <div class="text-muted">Loading…</div>
+        </template>
+        <template x-if="error">
+            <div class="text-muted" x-text="error"></div>
+        </template>
+
+        <template x-for="p in products" :key="p.id">
+            <article class="product-card card--interactive" @click="toDetails(p.id)" @keydown.enter.prevent="toDetails(p.id)"
+                     role="button" tabindex="0">
+                <div class="product-card__thumb"><img :src="p.image" :alt="p.name" loading="lazy" onerror="this.style.display='none'">
+                </div>
+                <div class="product-card__meta">
+                    <div class="product-card__title" x-text="p.name"></div>
+                    <div class="category" x-show="p.category" x-text="p.category" style="font-size:12px; opacity:.7;"></div>
+                    <div class="product-card__price" x-text="p.price != null ? ('$' + p.price.toFixed(2)) : ''"></div>
+                </div>
+                <div class="product-card__actions">
+                    <button class="btn-mini" aria-label="Add to wishlist" @click.stop>♡</button>
+                    <button class="btn-mini btn-mini--primary" @click.stop="addToCart(p.id)">Add to Cart</button>
+                </div>
+            </article>
+        </template>
+    </div>
+</section>
+
+<section class="container section">
+    <div class="feature">
+        <div class="feature__content">
+            <h3 class="feature__title">Official Licensed Products</h3>
+            <p class="feature__description">Certified by PlayStation®, curated and stress-tested to perform.</p>
+            <a class="btn" href="#">Shop now</a>
+        </div>
+        <div class="feature__image" aria-hidden="true"></div>
+    </div>
+</section>
+
+<section class="container section">
+    <div class="section__header">
+        <h2 class="section__title">Top Sellings</h2>
+        <a th:href="@{/search}" class="section__link">See all</a>
+    </div>
+
+    <div class="grid" x-data="productGrid('/api/products?pageIndex=0&pageSize=4&sort=-sales')"
+         x-init="init()">
+        <template x-if="loading">
+            <div class="text-muted">Loading…</div>
+        </template>
+        <template x-if="error">
+            <div class="text-muted" x-text="error"></div>
+        </template>
+
+        <template x-for="p in products" :key="p.id">
+            <article class="product-card card--interactive" @click="toDetails(p.id)" @keydown.enter.prevent="toDetails(p.id)"
+                     role="button" tabindex="0">
+                <div class="product-card__thumb"><img :src="p.image" :alt="p.name" loading="lazy" onerror="this.style.display='none'">
+                </div>
+                <div class="product-card__meta">
+                    <div class="product-card__title" x-text="p.name"></div>
+                    <div class="category" x-show="p.category" x-text="p.category" style="font-size:12px; opacity:.7;"></div>
+                    <div class="product-card__price" x-text="p.price != null ? ('$' + p.price.toFixed(2)) : ''"></div>
+                </div>
+                <div class="product-card__actions">
+                    <button class="btn-mini" aria-label="Add to wishlist" @click.stop>♡</button>
+                    <button class="btn-mini btn-mini--primary" @click.stop="addToCart(p.id)">Add to Cart</button>
+                </div>
+            </article>
+        </template>
+    </div>
+</section>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<div th:replace="~{fragments/header :: header-script}"></div>
+<div th:replace="~{fragments/footer :: footer-script}"></div>
+</body>
+</html>

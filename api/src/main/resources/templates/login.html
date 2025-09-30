@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/variables.css}">
+    <link rel="stylesheet" th:href="@{/css/components.css}">
+    <link rel="stylesheet" th:href="@{/css/signin.css}">
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <style>[x-cloak]{display:none!important}</style>
+</head>
+<body>
+<main class="page--auth">
+    <div class="auth-card">
+        <header class="brand">
+            <div class="logo__badge">L</div>
+            <div class="brand-name">Lootsy</div>
+        </header>
+
+        <section class="content">
+            <div class="panel">
+                <h2>Login</h2>
+                <p>Login to access your <b>"lootsy"</b> account</p>
+
+                <form class="form" x-data="loginForm" @submit.prevent="login" novalidate>
+                    <div class="field">
+                        <label class="label" for="email">Email</label>
+                        <input class="input" type="email" id="email" name="email" placeholder="john.doe@gmail.com"
+                               x-model.trim="email" autocomplete="username" required>
+                    </div>
+
+                    <div class="field">
+                        <label class="label" for="password">Password</label>
+                        <input class="input" type="password" id="password" name="password" placeholder="••••••••••••••••"
+                               x-model="password" autocomplete="current-password" required>
+                    </div>
+
+                    <p class="subtle" x-show="error" x-text="error" style="color:#d00" role="alert" aria-live="polite"></p>
+
+                    <button class="btn btn--auth" type="submit" :disabled="loading">
+                        <span x-show="!loading">Login</span>
+                        <span x-show="loading" aria-live="polite">Logging in…</span>
+                    </button>
+
+                    <p class="subtle">Don't have an account? <a th:href="@{/register}">Sign up</a></p>
+                </form>
+            </div>
+
+            <div class="art" aria-hidden="true">
+                <div class="phone">
+                    <div class="shield"><div class="tick">✓</div></div>
+                    <div class="screen">
+                        <div class="lock">🔒</div>
+                        <div class="pin">
+                            <div class="dot ok"></div>
+                            <div class="dot ok"></div>
+                            <div class="dot ok"></div>
+                            <div class="dot"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pager"><span class="active"></span><span></span></div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('loginForm', () => ({
+        email: '',
+        password: '',
+        loading: false,
+        error: '',
+
+        async login(){
+          this.error = '';
+          this.loading = true;
+          try {
+            const res = await fetch('/api/token', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Basic ' + btoa(`${this.email}:${this.password}`)
+              }
+            });
+
+            if (!res.ok) {
+              const msg = res.status === 401 ? 'Invalid email or password.' : `Request failed (${res.status}).`;
+              throw new Error(msg);
+            }
+
+            const data = await res.json();
+            if (!data.token) throw new Error('No token returned by server.');
+
+            localStorage.setItem('auth.token', data.token);
+            if (data.expiresIn) {
+              localStorage.setItem('auth.expiresAt', String(Date.now() + Number(data.expiresIn)));
+            }
+
+            location.assign('/home');
+          } catch (e) {
+            this.error = e?.message || 'Login failed.';
+          } finally {
+            this.loading = false;
+          }
+        }
+      }))
+    });
+</script>
+</body>
+</html>
