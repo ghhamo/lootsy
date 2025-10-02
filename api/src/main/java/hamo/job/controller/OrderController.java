@@ -31,12 +31,9 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<OrderDTO> createOrder(
-            @Valid @RequestBody CreateOrderRequestDTO createOrderRequest,
-            HttpServletRequest request) {
-
+            @Valid @RequestBody CreateOrderRequestDTO createOrderRequest, HttpServletRequest request) {
         String token = extractTokenFromRequest(request);
         Long userId = jwtService.extractUserId(token);
-
         OrderDTO createdOrder = orderService.createOrder(userId, createOrderRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
     }
@@ -45,11 +42,9 @@ public class OrderController {
     public ResponseEntity<Iterable<OrderDTO>> getAllOrders(
             @RequestParam int pageIndex,
             @RequestParam int pageSize) {
-
         if (pageMaxSize < pageSize) {
             throw new IllegalStateException("Page size exceeds maximum allowed size");
         }
-
         Iterable<OrderDTO> orders = orderService.getAllOrders(new PaginationDTO(pageIndex, pageSize));
         return ResponseEntity.ok(orders);
     }

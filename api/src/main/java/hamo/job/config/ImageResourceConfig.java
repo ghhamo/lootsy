@@ -18,7 +18,6 @@ public class ImageResourceConfig implements WebMvcConfigurer {
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         File uploadDir = new File(imageFolder);
         String uploadPath = uploadDir.getAbsolutePath();
-        
         registry.addResourceHandler("/images/products/**")
                 .addResourceLocations("file:" + uploadPath + "/");
     }

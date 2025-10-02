@@ -6,8 +6,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public record UserDTO(Long id, String name, String surname, String email,
-                      String password, String phoneNumber) {
+public record UserDTO(Long id, String name, String surname, String email, String password, String phoneNumber) {
     
     public UserDTO {
         Objects.requireNonNull(email, "Email cannot be null");

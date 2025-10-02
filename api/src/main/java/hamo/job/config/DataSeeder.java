@@ -32,18 +32,7 @@ public class DataSeeder implements ApplicationRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSeeder.class);
 
-    private static class ProductData {
-        final String name;
-        final String description;
-        final BigDecimal price;
-        final int categoryIndex;
-
-        ProductData(String name, String description, BigDecimal price, int categoryIndex) {
-            this.name = name;
-            this.description = description;
-            this.price = price;
-            this.categoryIndex = categoryIndex;
-        }
+    private record ProductData(String name, String description, BigDecimal price, int categoryIndex) {
     }
 
     private final UserService userService;
@@ -201,17 +190,13 @@ public class DataSeeder implements ApplicationRunner {
             for (int i = 0; i < productData.length; i++) {
                 ProductData data = productData[i];
                 logger.debug("Processing product {}/{}: {}", i + 1, productData.length, data.name);
-
                 String imageUrl = urlGenerator.addProductUrl();
                 logger.debug("Generated image URL: {}", imageUrl);
-                
                 File imagePath = imageDownloader.downloadImage(imageUrl);
                 logger.debug("Downloaded image to: {}", imagePath.getName());
-                
                 String mediumImage = imageResizer.resizeImage(imagePath, imageMediumSize);
                 String smallImage = imageResizer.resizeImage(imagePath, imageSmallSize);
                 logger.debug("Created resized images - Medium: {}, Small: {}", mediumImage, smallImage);
-                
                 products.add(
                         new Product(data.name,
                                 data.price,
@@ -221,7 +206,6 @@ public class DataSeeder implements ApplicationRunner {
                                 mediumImage,
                                 smallImage)
                 );
-                
                 if ((i + 1) % 10 == 0) {
                     logger.info("Processed {}/{} products...", i + 1, productData.length);
                 }

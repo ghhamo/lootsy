@@ -8,8 +8,7 @@ public record OrderItemDTO(
     String productName,
     int quantity,
     double unitPrice,
-    double subtotal
-) {
+    double subtotal) {
 
     public static OrderItemDTO fromOrderItem(OrderItem orderItem) {
         return new OrderItemDTO(

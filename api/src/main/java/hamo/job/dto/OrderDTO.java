@@ -14,8 +14,7 @@ public record OrderDTO(
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     Long userId,
-    Set<OrderItemDTO> items
-) {
+    Set<OrderItemDTO> items) {
 
     public static OrderDTO fromOrder(Order order) {
         Set<OrderItemDTO> orderItems = new HashSet<>();

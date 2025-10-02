@@ -1,5 +1,6 @@
 package hamo.job.service;
 
+import hamo.job.exception.exceptions.userException.UserEmailNotFoundException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -36,7 +37,7 @@ public class JwtService {
     public Long extractUserId(String token) {
         String username = extractUsername(token);
         return userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"))
+                .orElseThrow(() -> new UserEmailNotFoundException(username))
                 .getId();
     }
 

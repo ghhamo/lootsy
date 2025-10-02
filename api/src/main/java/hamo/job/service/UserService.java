@@ -105,10 +105,7 @@ public class UserService {
     public Long getCurrentUserId() {
         org.springframework.security.core.Authentication authentication = 
             org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails) {
-            org.springframework.security.core.userdetails.UserDetails userDetails = 
-                (org.springframework.security.core.userdetails.UserDetails) authentication.getPrincipal();
+        if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
             String email = userDetails.getUsername();
             User user = userRepository.findByEmail(email).orElseThrow(() -> new UserEmailNotFoundException(email));
             return user.getId();
@@ -132,19 +129,15 @@ public class UserService {
     public AccountDTO updateCurrentUserAccount(UpdateAccountDTO updateAccountDTO) {
         Long userId = getCurrentUserId();
         User user = userRepository.findById(userId).orElseThrow(() -> new UserIdNotFoundException(userId));
-        
         user.setName(updateAccountDTO.name());
         user.setSurname(updateAccountDTO.surname());
         if (updateAccountDTO.phoneNumber() != null) {
             user.setPhoneNumber(updateAccountDTO.phoneNumber());
         }
-        
         user = userRepository.save(user);
-        
         int totalOrders = orderRepository.countByUser(user);
         double totalSpent = orderRepository.sumTotalAmountByUser(user);
         UserStatsDTO stats = new UserStatsDTO(totalOrders, totalSpent);
-        
         return AccountDTO.fromUser(user, stats);
     }
 }

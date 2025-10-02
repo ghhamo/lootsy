@@ -47,10 +47,8 @@ public class ShippingService {
     @Transactional
     public ShippingDTO updateShipping(Long id, ShippingDTO updatedShippingDTO) {
         Objects.requireNonNull(id);
-        
         Shipping existingShipping = shippingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Shipping not found with id: " + id));
-        
         if (updatedShippingDTO.firstName() != null) {
             existingShipping.setFirstName(updatedShippingDTO.firstName());
         }

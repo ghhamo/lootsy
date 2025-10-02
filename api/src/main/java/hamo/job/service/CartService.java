@@ -130,9 +130,7 @@ public class CartService {
     @Transactional
     public void clearCart(Long userId) {
         Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new CartIdNotFoundException(userId));
-        
         cartItemRepository.deleteByCartId(cart.getId());
-        
         cart.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cart);
     }

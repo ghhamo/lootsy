@@ -49,11 +49,6 @@ public class UserController {
         return userService.getUserByEmail(email);
     }
 
-    @PutMapping("/{id}")
-    public UserDTO updateUser(@PathVariable Long id) {
-        return userService.updateUser(id);
-    }
-
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         userService.deleteUser(id);
