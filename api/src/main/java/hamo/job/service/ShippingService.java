@@ -3,6 +3,7 @@ package hamo.job.service;
 import hamo.job.dto.PaginationDTO;
 import hamo.job.dto.ShippingDTO;
 import hamo.job.entity.Shipping;
+import hamo.job.exception.exceptions.shipping.ShippingIdNotFoundException;
 import hamo.job.repository.ShippingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -32,15 +33,15 @@ public class ShippingService {
     @Transactional(readOnly = true)
     public Iterable<ShippingDTO> getAllShipping(PaginationDTO paginationDTO) {
         PageRequest pageRequest = PageRequest.of(paginationDTO.pageNumber(), paginationDTO.pageSize());
-        Page<Shipping> shippings = shippingRepository.findAll(pageRequest);
-        return ShippingDTO.mapShippingSetToShippingDto(shippings);
+        Page<Shipping> shipping = shippingRepository.findAll(pageRequest);
+        return ShippingDTO.mapShippingSetToShippingDto(shipping);
     }
 
     @Transactional(readOnly = true)
     public ShippingDTO getShippingById(Long id) {
         Objects.requireNonNull(id);
         Shipping shipping = shippingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Shipping not found with id: " + id));
+                .orElseThrow(() -> new ShippingIdNotFoundException(id));
         return ShippingDTO.fromShipping(shipping);
     }
 
@@ -48,7 +49,7 @@ public class ShippingService {
     public ShippingDTO updateShipping(Long id, ShippingDTO updatedShippingDTO) {
         Objects.requireNonNull(id);
         Shipping existingShipping = shippingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Shipping not found with id: " + id));
+                .orElseThrow(() -> new ShippingIdNotFoundException(id));
         if (updatedShippingDTO.firstName() != null) {
             existingShipping.setFirstName(updatedShippingDTO.firstName());
         }

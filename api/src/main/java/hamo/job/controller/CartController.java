@@ -3,8 +3,6 @@ package hamo.job.controller;
 
 import hamo.job.dto.AddToCartRequestDTO;
 import hamo.job.dto.CartDTO;
-import hamo.job.dto.PaginationDTO;
-import hamo.job.entity.Cart;
 import hamo.job.service.CartService;
 import hamo.job.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,19 +27,11 @@ public class CartController {
         this.userService = userService;
     }
 
-    @GetMapping
-    public Iterable<Cart> getAll(@RequestParam int pageIndex, @RequestParam int pageSize) {
-        if (pageMaxSize < pageSize) {
-            throw new IllegalStateException();
-        }
-        return cartService.getCarts(new PaginationDTO(pageIndex, pageSize));
-    }
-
     @PostMapping
-    public ResponseEntity<HttpStatus> create() {
+    public ResponseEntity<Void> create() {
         Long userId = userService.getCurrentUserId();
         cartService.create(userId);
-        return ResponseEntity.ok().body(HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping("/current")
@@ -58,14 +48,9 @@ public class CartController {
     }
 
     @DeleteMapping("/remove/{productId}")
-    public ResponseEntity<?> removeProduct(@PathVariable Long productId) {
+    public ResponseEntity<Void> removeProduct(@PathVariable Long productId) {
         Long userId = userService.getCurrentUserId();
         cartService.removeProduct(userId, productId);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/users/{id}")
-    public ResponseEntity<CartDTO> getCartByUserId(@PathVariable Long id) {
-        return ResponseEntity.ok().body(cartService.getCartByUserId(id));
+        return ResponseEntity.noContent().build();
     }
 }

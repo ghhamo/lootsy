@@ -29,15 +29,6 @@ public class ShippingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdShipping);
     }
 
-    @GetMapping
-    public ResponseEntity<Iterable<ShippingDTO>> getAllShipping(@RequestParam int pageIndex, @RequestParam int pageSize) {
-        if (pageMaxSize < pageSize) {
-            throw new IllegalStateException("Page size exceeds maximum allowed size");
-        }
-        Iterable<ShippingDTO> shippingDTOs = shippingService.getAllShipping(new PaginationDTO(pageIndex, pageSize));
-        return ResponseEntity.ok(shippingDTOs);
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<ShippingDTO> getShippingById(@PathVariable Long id) {
         try {

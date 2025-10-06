@@ -2,6 +2,8 @@ package hamo.job.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "orderItems")
 public class OrderItem {
@@ -17,7 +19,7 @@ public class OrderItem {
     @JoinColumn(name = "product_id")
     private Product product;
     private int qty;
-    private double unitPrie;
+    private BigDecimal unitPrie;
     private double subtotal;
 
     public OrderItemId getId() {
@@ -52,11 +54,11 @@ public class OrderItem {
         this.qty = qty;
     }
 
-    public double getUnitPrie() {
+    public BigDecimal getUnitPrie() {
         return unitPrie;
     }
 
-    public void setUnitPrie(double unitPrie) {
+    public void setUnitPrie(BigDecimal unitPrie) {
         this.unitPrie = unitPrie;
     }
 

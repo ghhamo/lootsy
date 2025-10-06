@@ -1,9 +1,6 @@
 package hamo.job.controller;
 
-import hamo.job.dto.PaginationDTO;
-import hamo.job.dto.ProductDTO;
-import hamo.job.dto.ProductDetailsDTO;
-import hamo.job.dto.ProductHomePageDTO;
+import hamo.job.dto.*;
 import hamo.job.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,14 +20,14 @@ public class ProductController {
     }
 
     @PostMapping
-    public void create(@RequestBody ProductDTO productDTO) {
-        productService.create(productDTO);
+    public void create(@RequestBody CreateProductDTO createProductDTO) {
+        productService.create(createProductDTO);
     }
 
     @GetMapping
     public Iterable<ProductHomePageDTO> getAll(
-            @RequestParam int pageIndex, 
-            @RequestParam int pageSize,
+            @RequestParam(defaultValue = "100") int pageIndex,
+            @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) java.util.List<Long> categories,
             @RequestParam(required = false) Double minPrice,

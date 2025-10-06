@@ -1,11 +1,8 @@
 package hamo.job.service;
 
-import hamo.job.dto.AccountDTO;
-import hamo.job.dto.PaginationDTO;
-import hamo.job.dto.UpdateAccountDTO;
-import hamo.job.dto.UserDTO;
-import hamo.job.dto.UserStatsDTO;
+import hamo.job.dto.*;
 import hamo.job.entity.User;
+import hamo.job.exception.exceptions.token.NoAuthenticatedException;
 import hamo.job.exception.exceptions.userException.UserEmailAlreadyExistsException;
 import hamo.job.exception.exceptions.userException.UserEmailNotFoundException;
 import hamo.job.exception.exceptions.userException.UserIdNotFoundException;
@@ -42,46 +39,37 @@ public class UserService {
     }
 
     @Transactional
-    public void createUser(UserDTO userDTO) {
-        Optional<User> userFromDB = userRepository.findByEmail(userDTO.email());
+    public void createUser(CreateUserDTO createUserDTO) {
+        Optional<User> userFromDB = userRepository.findByEmail(createUserDTO.email());
         if (userFromDB.isPresent()) {
-            throw new UserEmailAlreadyExistsException(userDTO.email());
+            throw new UserEmailAlreadyExistsException(createUserDTO.email());
         }
-        User user = UserDTO.toUser(userDTO);
-        user.setPassword(passwordEncoder.encode(userDTO.password()));
+        User user = CreateUserDTO.toUser(createUserDTO);
+        user.setPassword(passwordEncoder.encode(createUserDTO.password()));
         user.setEnabled(true);
         User userFromDb = userRepository.save(user);
         cartService.create(userFromDb.getId());
     }
 
     @Transactional(readOnly = true)
-    public Iterable<UserDTO> getUsers(PaginationDTO paginationDTO) {
+    public Iterable<GetUserDTO> getUsers(PaginationDTO paginationDTO) {
         PageRequest pageRequest = PageRequest.of(paginationDTO.pageNumber(), paginationDTO.pageSize());
         Page<User> users = userRepository.findAll(pageRequest);
-        return UserDTO.mapUserListToUserDtoList(users);
+        return GetUserDTO.mapUserListToUserDtoList(users);
     }
 
     @Transactional(readOnly = true)
-    public UserDTO getUserById(Long id) {
+    public GetUserDTO getUserById(Long id) {
         Objects.requireNonNull(id);
         User user = userRepository.findById(id).orElseThrow(() -> new UserIdNotFoundException(id));
-        return UserDTO.fromUser(user);
+        return GetUserDTO.fromUser(user);
     }
 
     @Transactional(readOnly = true)
-    public UserDTO getUserByEmail(String email) {
+    public GetUserDTO getUserByEmail(String email) {
         Objects.requireNonNull(email);
         User user = userRepository.findByEmail(email).orElseThrow(() -> new UserEmailNotFoundException(email));
-        return UserDTO.fromUser(user);
-    }
-
-    @Transactional
-    public UserDTO updateUser(Long id) {
-        Objects.requireNonNull(id);
-        User user = userRepository.findById(id).orElseThrow(() -> new UserIdNotFoundException(id));
-        user.setName("user");
-        User changedUser = userRepository.save(user);
-        return UserDTO.fromUser(changedUser);
+        return GetUserDTO.fromUser(user);
     }
 
     @Transactional
@@ -110,8 +98,7 @@ public class UserService {
             User user = userRepository.findByEmail(email).orElseThrow(() -> new UserEmailNotFoundException(email));
             return user.getId();
         }
-        
-        throw new RuntimeException("No authenticated user found");
+        throw new NoAuthenticatedException("No authenticated user found");
     }
     
     @Transactional(readOnly = true)
@@ -131,9 +118,7 @@ public class UserService {
         User user = userRepository.findById(userId).orElseThrow(() -> new UserIdNotFoundException(userId));
         user.setName(updateAccountDTO.name());
         user.setSurname(updateAccountDTO.surname());
-        if (updateAccountDTO.phoneNumber() != null) {
-            user.setPhoneNumber(updateAccountDTO.phoneNumber());
-        }
+        user.setPhoneNumber(updateAccountDTO.phoneNumber());
         user = userRepository.save(user);
         int totalOrders = orderRepository.countByUser(user);
         double totalSpent = orderRepository.sumTotalAmountByUser(user);

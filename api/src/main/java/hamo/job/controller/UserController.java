@@ -1,9 +1,6 @@
 package hamo.job.controller;
 
-import hamo.job.dto.AccountDTO;
-import hamo.job.dto.PaginationDTO;
-import hamo.job.dto.UpdateAccountDTO;
-import hamo.job.dto.UserDTO;
+import hamo.job.dto.*;
 import hamo.job.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,13 +23,13 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<HttpStatus> createUser(@RequestBody UserDTO user) {
+    public ResponseEntity<Void> createUser(@RequestBody CreateUserDTO user) {
         userService.createUser(user);
-        return ResponseEntity.ok().body(HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping
-    public Iterable<UserDTO> getAll(@RequestParam int pageIndex, @RequestParam int pageSize) {
+    public Iterable<GetUserDTO> getAll(@RequestParam int pageIndex, @RequestParam int pageSize) {
         if (pageMaxSize < pageSize) {
             throw new IllegalStateException();
         }
@@ -40,12 +37,12 @@ public class UserController {
     }
 
     @GetMapping("/id/{id}")
-    public UserDTO getOne(@PathVariable Long id) {
+    public GetUserDTO getOne(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
     @GetMapping("/email")
-    public UserDTO getByEmail(@RequestParam String email) {
+    public GetUserDTO getByEmail(@RequestParam String email) {
         return userService.getUserByEmail(email);
     }
 

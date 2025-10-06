@@ -2,7 +2,7 @@ package hamo.job.service;
 
 import hamo.job.dto.*;
 import hamo.job.entity.*;
-import hamo.job.exception.exceptions.cartException.CartIdNotFoundException;
+import hamo.job.exception.exceptions.cartException.CartNotFoundException;
 import hamo.job.exception.exceptions.cartException.CartIsAlreadyExistsByUserIdException;
 import hamo.job.exception.exceptions.productException.ProductIdNotFoundException;
 import hamo.job.exception.exceptions.userException.UserIdNotFoundException;
@@ -12,8 +12,6 @@ import hamo.job.repository.ProductRepository;
 import hamo.job.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -37,26 +35,9 @@ public class CartService {
         this.cartItemRepository = cartItemRepository;
     }
 
-    @Transactional(readOnly = true)
-    public Iterable<Cart> getCarts(PaginationDTO paginationDTO) {
-        PageRequest pageRequest = PageRequest.of(paginationDTO.pageNumber(), paginationDTO.pageSize());
-        Page<Cart> carts = cartRepository.findAll(pageRequest);
-        return mapPageCartToCart(carts);
-    }
-
-    private Iterable<Cart> mapPageCartToCart(Iterable<Cart> carts) {
-        Set<Cart> cartSet = new HashSet<>();
-        for (Cart cart : carts) {
-            cartSet.add(cart);
-        }
-        return cartSet;
-    }
-
-
     @Transactional
     public void add(Long userId, AddToCartRequestDTO req) {
         int qty = (req.quantity() != null && req.quantity() > 0) ? req.quantity() : 1;
-
         Cart cart = cartRepository.findByUserId(userId).orElseGet(() -> {
             Cart newCart = new Cart();
             newCart.setUserId(userId);
@@ -120,7 +101,7 @@ public class CartService {
 
     @Transactional
     public void removeProduct(Long userId, Long productId) {
-        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new CartIdNotFoundException(userId));
+        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException("Cart not found with user id " + userId));
         CartItemId id = new CartItemId(cart.getId(), productId);
         cartItemRepository.deleteById(id);
         cart.setUpdatedAt(LocalDateTime.now());
@@ -129,7 +110,7 @@ public class CartService {
 
     @Transactional
     public void clearCart(Long userId) {
-        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new CartIdNotFoundException(userId));
+        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException("Cart not found with user id " + userId));
         cartItemRepository.deleteByCartId(cart.getId());
         cart.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cart);

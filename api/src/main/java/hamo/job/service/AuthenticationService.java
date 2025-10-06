@@ -1,7 +1,7 @@
 package hamo.job.service;
 
 import hamo.job.dto.LoginUserDto;
-import hamo.job.dto.MyUserDetails;
+import hamo.job.dto.MyUserDetailsDTO;
 import hamo.job.entity.User;
 import hamo.job.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,6 +31,6 @@ public class AuthenticationService {
                         input.password()));
         User user = userRepository.findByEmail(input.email())
                 .orElseThrow();
-        return new MyUserDetails(user.getEmail(), user.getPassword());
+        return new MyUserDetailsDTO(user.getEmail(), user.getPassword());
     }
 }

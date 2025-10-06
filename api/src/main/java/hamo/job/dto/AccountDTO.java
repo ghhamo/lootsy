@@ -4,7 +4,14 @@ import hamo.job.entity.User;
 
 import java.util.Objects;
 
-public record AccountDTO(Long id, String name, String surname, String email, String phoneNumber, boolean enabled, UserStatsDTO stats) {
+public record AccountDTO(
+        Long id,
+        String name,
+        String surname,
+        String email,
+        String phoneNumber,
+        boolean enabled,
+        UserStatsDTO stats) {
     
     public AccountDTO {
         Objects.requireNonNull(email, "Email cannot be null");

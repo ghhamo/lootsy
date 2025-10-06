@@ -2,12 +2,14 @@ package hamo.job.dto;
 
 import hamo.job.entity.OrderItem;
 
+import java.math.BigDecimal;
+
 public record OrderItemDTO(
     Long orderId,
     Long productId,
     String productName,
     int quantity,
-    double unitPrice,
+    BigDecimal unitPrice,
     double subtotal) {
 
     public static OrderItemDTO fromOrderItem(OrderItem orderItem) {

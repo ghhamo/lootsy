@@ -1,6 +1,6 @@
 package hamo.job.controller;
 
-import hamo.job.dto.LoginResponse;
+import hamo.job.dto.LoginResponseDTO;
 import hamo.job.dto.LoginUserDto;
 import hamo.job.service.AuthenticationService;
 import hamo.job.service.JwtService;
@@ -30,22 +30,28 @@ public class TokenController {
     }
 
     @PostMapping("/token")
-    public ResponseEntity<LoginResponse> authenticate(HttpServletRequest request) {
+    public ResponseEntity<LoginResponseDTO> authenticate(HttpServletRequest request) {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (header == null || !header.startsWith("Basic ")) {
             return ResponseEntity.badRequest().build();
         }
         String base64Credentials = header.substring("Basic ".length());
-        byte[] decodedBytes = Base64.getDecoder().decode(base64Credentials);
-        String credentials = new String(decodedBytes, StandardCharsets.UTF_8);
-        String[] values = credentials.split(":", 2);
-        String username = values[0];
-        String password = values[1];
-        LoginUserDto loginUserDto = new LoginUserDto(username, password);
-        UserDetails authenticatedUser = authenticationService.authenticate(loginUserDto);
+        String credentials;
+        try {
+            credentials = new String(Base64.getDecoder().decode(base64Credentials), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+        int sep = credentials.indexOf(':');
+        if (sep < 0) {
+            return ResponseEntity.badRequest().build();
+        }
+        String username = credentials.substring(0, sep);
+        String password = credentials.substring(sep + 1);
+        UserDetails authenticatedUser = authenticationService.authenticate(new LoginUserDto(username, password));
         String jwtToken = jwtService.generateToken(authenticatedUser);
-        LoginResponse loginResponse = new LoginResponse(jwtToken, jwtService.getExpirationTime());
-        return ResponseEntity.ok(loginResponse);
+        return ResponseEntity.ok(new LoginResponseDTO(jwtToken, jwtService.getExpirationTime()));
     }
+
 
 }

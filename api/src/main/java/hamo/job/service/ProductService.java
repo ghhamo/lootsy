@@ -1,9 +1,6 @@
 package hamo.job.service;
 
-import hamo.job.dto.PaginationDTO;
-import hamo.job.dto.ProductDTO;
-import hamo.job.dto.ProductDetailsDTO;
-import hamo.job.dto.ProductHomePageDTO;
+import hamo.job.dto.*;
 import hamo.job.entity.Category;
 import hamo.job.entity.Product;
 import hamo.job.exception.exceptions.categoryException.CategoryIdNotFoundException;
@@ -42,9 +39,9 @@ public class ProductService {
     }
 
     @Transactional
-    public void create(ProductDTO productDTO) {
-        Category category = categoryRepository.findById(productDTO.categoryId()).orElseThrow(() -> new CategoryIdNotFoundException(productDTO.categoryId()));
-        Product product = ProductDTO.toProduct(productDTO);
+    public void create(CreateProductDTO createProductDTO) {
+        Category category = categoryRepository.findById(createProductDTO.categoryId()).orElseThrow(() -> new CategoryIdNotFoundException(createProductDTO.categoryId()));
+        Product product = CreateProductDTO.toProduct(createProductDTO);
         product.setCategory(category);
         productRepository.save(product);
     }

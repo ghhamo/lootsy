@@ -2,7 +2,6 @@ package hamo.job.dto;
 
 import hamo.job.entity.Product;
 
-
 public record ProductDetailsDTO(String name, String price, String categoryName, String description, String imageUrl) {
 
     public static ProductDetailsDTO fromProduct(Product product) {

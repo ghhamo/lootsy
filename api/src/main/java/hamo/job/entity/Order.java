@@ -21,6 +21,9 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "shipping_id", nullable = false)
+    private Shipping shipping;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItem> items = new HashSet<>();
 
@@ -91,4 +94,11 @@ public class Order {
         return items;
     }
 
+    public Shipping getShipping() {
+        return shipping;
+    }
+
+    public void setShipping(Shipping shipping) {
+        this.shipping = shipping;
+    }
 }

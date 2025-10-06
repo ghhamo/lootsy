@@ -12,9 +12,6 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    @Query(value = "SELECT product.image_url_l FROM Book as product WHERE product.id = :id", nativeQuery = true)
-    Optional<String> findImageUrlLByProductId(@Param("id") Long id);
-    
     @Query("SELECT p FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(p.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     Page<Product> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(@Param("searchTerm") String searchTerm, Pageable pageable);
     
